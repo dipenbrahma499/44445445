@@ -1,27 +1,15 @@
-// api/contact.js
+import nodemailer from "nodemailer";
 
-const nodemailer = require("nodemailer");
-
-function escapeHtml(value = "") {
-    return String(value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
-
-module.exports = async function handler(req, res) {
-
-    // Only POST
+export default async function handler(req, res) {
+    // CORS / method
     if (req.method !== "POST") {
         return res.status(405).json({
+            success: false,
             error: "Method not allowed"
         });
     }
 
     try {
-
         const {
             name,
             email,
@@ -30,45 +18,36 @@ module.exports = async function handler(req, res) {
             message
         } = req.body || {};
 
-        // Required fields
+        // Validation
         if (!name || !email || !phone || !message) {
             return res.status(400).json({
-                error: "Name, email, phone and message are required."
+                success: false,
+                error: "Please fill in all required fields."
             });
         }
 
-        // Basic length protection
-        if (name.length > 100) {
-            return res.status(400).json({
-                error: "Name is too long."
-            });
-        }
-
-        if (email.length > 254) {
-            return res.status(400).json({
-                error: "Email address is too long."
-            });
-        }
-
-        if (phone.length > 25) {
-            return res.status(400).json({
-                error: "Phone number is invalid."
-            });
-        }
-
-        if (message.length > 5000) {
-            return res.status(400).json({
-                error: "Message is too long."
-            });
-        }
-
-        // Email validation
+        // Basic email validation
         const emailRegex =
             /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
         if (!emailRegex.test(email)) {
             return res.status(400).json({
+                success: false,
                 error: "Invalid email address."
+            });
+        }
+
+        // Indian phone validation
+        const cleanPhone = String(phone)
+            .replace(/\s+/g, "");
+
+        const phoneRegex =
+            /^(?:\+91|91)?[6-9]\d{9}$/;
+
+        if (!phoneRegex.test(cleanPhone)) {
+            return res.status(400).json({
+                success: false,
+                error: "Invalid Indian phone number."
             });
         }
 
@@ -78,8 +57,7 @@ module.exports = async function handler(req, res) {
             SMTP_PORT,
             SMTP_USER,
             SMTP_PASS,
-            SMTP_FROM,
-            SMTP_TO
+            CONTACT_TO
         } = process.env;
 
         if (
@@ -87,61 +65,44 @@ module.exports = async function handler(req, res) {
             !SMTP_PORT ||
             !SMTP_USER ||
             !SMTP_PASS ||
-            !SMTP_TO
+            !CONTACT_TO
         ) {
             console.error(
                 "Missing SMTP environment variables."
             );
 
             return res.status(500).json({
-                error: "Server SMTP configuration is incomplete."
+                success: false,
+                error: "Server email configuration is incomplete."
             });
         }
 
-        // Gmail SMTP transporter
+        // SMTP transporter
         const transporter = nodemailer.createTransport({
-
             host: SMTP_HOST,
-
             port: Number(SMTP_PORT),
-
             secure: Number(SMTP_PORT) === 465,
-
             auth: {
                 user: SMTP_USER,
                 pass: SMTP_PASS
             }
         });
 
-        // Escape user input before putting into HTML
-        const safeName = escapeHtml(name);
-        const safeEmail = escapeHtml(email);
-        const safePhone = escapeHtml(phone);
-        const safeSubject = escapeHtml(
-            subject || "No subject"
-        );
-
-        const safeMessage = escapeHtml(message)
-            .replace(/\r?\n/g, "<br>");
+        // Verify SMTP
+        await transporter.verify();
 
         // Email
-        const mailOptions = {
-
-            from:
-                SMTP_FROM ||
-                SMTP_USER,
-
-            to:
-                SMTP_TO,
-
-            replyTo:
-                email,
-
+        await transporter.sendMail({
+            from: `"Website Contact Form" <${SMTP_USER}>`,
+            to: CONTACT_TO,
+            replyTo: email,
             subject:
-                `📬 Contact from ${name}`,
+                subject?.trim()
+                    ? subject.trim()
+                    : `New Contact Message from ${name}`,
 
             text: `
-New contact message
+New contact form submission
 
 Name: ${name}
 Email: ${email}
@@ -150,114 +111,81 @@ Subject: ${subject || "No subject"}
 
 Message:
 ${message}
-
-Sent from:
-dipen.vercel.app
             `.trim(),
 
             html: `
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <title>New Contact Message</title>
+<meta charset="UTF-8">
+<title>New Contact Message</title>
 </head>
 
 <body style="
     margin:0;
     padding:30px;
-    background:#0e1117;
-    font-family:Arial,Helvetica,sans-serif;
+    background:#f4f6f8;
+    font-family:Arial,sans-serif;
 ">
 
 <div style="
     max-width:600px;
     margin:auto;
-    background:#18202c;
-    border-radius:20px;
+    background:#ffffff;
+    border-radius:12px;
     padding:30px;
-    color:#e2e8f0;
-    border:1px solid #334155;
+    border:1px solid #e5e7eb;
 ">
 
-    <h2 style="
-        margin-top:0;
-        color:#ffffff;
-    ">
-        📨 New Contact Message
-    </h2>
+<h2 style="margin-top:0;">
+    New Contact Form Message
+</h2>
 
-    <div style="
-        background:#0d121a;
-        border-radius:14px;
-        padding:20px;
-        margin-top:20px;
-    ">
+<hr>
 
-        <p>
-            <strong>Name:</strong><br>
-            ${safeName}
-        </p>
+<p>
+<strong>Name:</strong>
+${escapeHtml(name)}
+</p>
 
-        <p>
-            <strong>Email:</strong><br>
-            <a
-                href="mailto:${safeEmail}"
-                style="color:#60a5fa;"
-            >
-                ${safeEmail}
-            </a>
-        </p>
+<p>
+<strong>Email:</strong>
+${escapeHtml(email)}
+</p>
 
-        <p>
-            <strong>Phone:</strong><br>
-            ${safePhone}
-        </p>
+<p>
+<strong>Phone:</strong>
+${escapeHtml(phone)}
+</p>
 
-        <p>
-            <strong>Subject:</strong><br>
-            ${safeSubject}
-        </p>
+<p>
+<strong>Subject:</strong>
+${escapeHtml(subject || "No subject")}
+</p>
 
-        <p>
-            <strong>Message:</strong>
-        </p>
+<p>
+<strong>Message:</strong>
+</p>
 
-        <div style="
-            background:#111827;
-            border-left:4px solid #3b82f6;
-            padding:15px;
-            border-radius:10px;
-            line-height:1.6;
-        ">
-            ${safeMessage}
-        </div>
-
-    </div>
-
-    <p style="
-        text-align:center;
-        color:#64748b;
-        font-size:12px;
-        margin-top:25px;
-    ">
-        Sent via dipen.vercel.app contact form
-    </p>
+<div style="
+    background:#f8fafc;
+    border-radius:8px;
+    padding:15px;
+    white-space:pre-wrap;
+">
+${escapeHtml(message)}
+</div>
 
 </div>
 
 </body>
 </html>
             `
-        };
-
-        // Send email
-        await transporter.sendMail(mailOptions);
+        });
 
         return res.status(200).json({
             success: true,
-            message:
-                "Your message was sent successfully! We'll get back to you soon."
+            message: "Message sent successfully!"
         });
 
     } catch (error) {
@@ -268,8 +196,19 @@ dipen.vercel.app
         );
 
         return res.status(500).json({
-            error:
-                "Failed to send message. Please try again later."
+            success: false,
+            error: "Unable to send message. Please try again later."
         });
     }
-};
+}
+
+
+// Prevent HTML injection in email
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
