@@ -1,20 +1,7 @@
 {
-    "name": "contact-form",
-    "version": "1.0.0",
-    "description": "Production-ready contact form with Nodemailer and Vercel serverless API",
-    "main": "api/contact.js",
-    "scripts": {
-        "dev": "vercel dev",
-        "deploy": "vercel deploy --prod"
-    },
-    "dependencies": {
-        "nodemailer": "^6.9.7"
-    },
-    "keywords": [
-        "contact-form",
-        "nodemailer",
-        "vercel",
-        "serverless"
-    ],
-    "license": "MIT"
+  "name": "contact-form",
+  "version": "1.0.0",
+  "dependencies": {
+    "nodemailer": "^6.9.14"
+  }
 }

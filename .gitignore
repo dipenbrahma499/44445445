@@ -1,25 +1,3 @@
-# Node
-node_modules/
-npm-debug.log*
-package-lock.json
-yarn.lock
-
-# Environment
+node_modules
 .env
-.env.local
-.env.*.local
-
-# Vercel
-.vercel/
-.vercelignore
-
-# OS
-.DS_Store
-Thumbs.db
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+.vercel

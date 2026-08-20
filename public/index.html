@@ -1,106 +1,122 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Contact us - Get in touch with our team" />
-    <title>Contact Us</title>
-    <link rel="stylesheet" href="/public/style.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contact Form</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 500px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f9f9f9;
+    }
+    h1 { text-align: center; color: #333; }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #444;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 15px;
+    }
+    button {
+      width: 100%;
+      background: #0070f3;
+      color: white;
+      padding: 14px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+    }
+    button:disabled {
+      background: #999;
+      cursor: not-allowed;
+    }
+    .success { color: green; margin-top: 15px; text-align: center; }
+    .error { color: red; margin-top: 15px; text-align: center; }
+  </style>
 </head>
 <body>
-    <main>
-        <div class="container">
-            <div class="card">
-                <div class="card-header">
-                    <h1>Contact Us</h1>
-                    <p>We'd love to hear from you. Fill out the form below and we'll get back to you as soon as possible.</p>
-                </div>
 
-                <form id="contactForm" novalidate>
-                    <div class="form-group">
-                        <label for="name">Full Name <span class="required">*</span></label>
-                        <input
-                            type="text"
-                            id="name"
-                            name="name"
-                            autocomplete="name"
-                            placeholder="John Doe"
-                            maxlength="100"
-                            required
-                            aria-required="true"
-                        />
-                        <div class="error-message" id="nameError"></div>
-                    </div>
+  <h1>Contact Us</h1>
 
-                    <div class="form-group">
-                        <label for="email">Email Address <span class="required">*</span></label>
-                        <input
-                            type="email"
-                            id="email"
-                            name="email"
-                            autocomplete="email"
-                            placeholder="john@example.com"
-                            maxlength="100"
-                            required
-                            aria-required="true"
-                        />
-                        <div class="error-message" id="emailError"></div>
-                    </div>
+  <form id="contactForm">
+    <label>Name</label>
+    <input type="text" id="name" required placeholder="Your name" />
 
-                    <div class="form-group">
-                        <label for="phone">Phone Number <span class="required">*</span></label>
-                        <input
-                            type="tel"
-                            id="phone"
-                            name="phone"
-                            autocomplete="tel"
-                            placeholder="+1 (555) 000-0000"
-                            maxlength="20"
-                            required
-                            aria-required="true"
-                        />
-                        <div class="error-message" id="phoneError"></div>
-                    </div>
+    <label>Email</label>
+    <input type="email" id="email" required placeholder="Your email" />
 
-                    <div class="form-group">
-                        <label for="subject">Subject <span class="optional">(Optional)</span></label>
-                        <input
-                            type="text"
-                            id="subject"
-                            name="subject"
-                            autocomplete="subject"
-                            placeholder="How can we help?"
-                            maxlength="200"
-                        />
-                        <div class="error-message" id="subjectError"></div>
-                    </div>
+    <label>Phone</label>
+    <input type="tel" id="phone" required placeholder="Your phone number" />
 
-                    <div class="form-group">
-                        <label for="message">Message <span class="required">*</span></label>
-                        <textarea
-                            id="message"
-                            name="message"
-                            rows="6"
-                            placeholder="Tell us about your inquiry..."
-                            maxlength="2000"
-                            required
-                            aria-required="true"
-                        ></textarea>
-                        <div class="error-message" id="messageError"></div>
-                        <div class="char-counter" id="charCounter">0 / 2000</div>
-                    </div>
+    <label>Subject (Optional)</label>
+    <input type="text" id="subject" placeholder="Subject" />
 
-                    <button type="submit" id="submitBtn" class="submit-btn">
-                        <span id="btnText">Send Message</span>
-                        <span id="btnLoader" class="loader hidden"></span>
-                    </button>
+    <label>Message</label>
+    <textarea id="message" rows="5" required placeholder="Your message..."></textarea>
 
-                    <div id="formStatus" class="status-message hidden" role="alert"></div>
-                </form>
-            </div>
-        </div>
-    </main>
+    <button type="submit" id="submitBtn">Send Message</button>
+  </form>
 
-    <script src="/public/script.js"></script>
+  <p id="status"></p>
+
+  <script>
+    const form = document.getElementById("contactForm");
+    const status = document.getElementById("status");
+    const submitBtn = document.getElementById("submitBtn");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+      const subject = document.getElementById("subject").value.trim();
+      const message = document.getElementById("message").value.trim();
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Sending...";
+      status.textContent = "";
+      status.className = "";
+
+      try {
+        const res = await fetch("/api/contact", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email, phone, subject, message }),
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          status.textContent = "Message sent successfully!";
+          status.className = "success";
+          form.reset();
+        } else {
+          status.textContent = data.error || "Failed to send message";
+          status.className = "error";
+        }
+      } catch (err) {
+        status.textContent = "Something went wrong. Please try again.";
+        status.className = "error";
+      }
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Send Message";
+    });
+  </script>
+
 </body>
 </html>
