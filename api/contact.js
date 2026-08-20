@@ -16,6 +16,13 @@ module.exports = async (req, res) => {
   try {
     const { name, email, phone, subject, message } = req.body;
 
+    // Debug - Environment variables check
+    if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+      return res.status(500).json({ 
+        error: "Server configuration error: Missing email credentials" 
+      });
+    }
+
     if (!name || !email || !phone || !message) {
       return res.status(400).json({ error: "Name, Email, Phone and Message are required" });
     }
@@ -34,7 +41,7 @@ module.exports = async (req, res) => {
 
     await transporter.sendMail({
       from: `"${name}" <${process.env.GMAIL_USER}>`,
-      to: process.env.CONTACT_TO_EMAIL,
+      to: process.env.CONTACT_TO_EMAIL || process.env.GMAIL_USER,
       replyTo: email,
       subject: emailSubject,
       text: `
@@ -59,7 +66,10 @@ ${message}
 
     return res.status(200).json({ success: true });
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: "Failed to send message" });
+    console.error("Email Error:", error);
+    return res.status(500).json({ 
+      error: "Failed to send message",
+      details: error.message 
+    });
   }
 };
