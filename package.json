@@ -1,20 +1,20 @@
 {
-  "name": "dipen-contact-form",
-  "private": true,
-  "version": "1.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "nodemailer": "^7.0.5",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-react": "^4.7.0",
-    "vite": "^7.1.2"
-  }
+    "name": "contact-form",
+    "version": "1.0.0",
+    "description": "Production-ready contact form with Nodemailer and Vercel serverless API",
+    "main": "api/contact.js",
+    "scripts": {
+        "dev": "vercel dev",
+        "deploy": "vercel deploy --prod"
+    },
+    "dependencies": {
+        "nodemailer": "^6.9.7"
+    },
+    "keywords": [
+        "contact-form",
+        "nodemailer",
+        "vercel",
+        "serverless"
+    ],
+    "license": "MIT"
 }
